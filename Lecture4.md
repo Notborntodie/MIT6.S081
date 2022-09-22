@@ -37,11 +37,10 @@
    1. read/write寄存器----`SATP`,`STVEC`,`SEPC`,`SSCRATCH`。
    2. 访问`PTE_U=0`的地址（反过来，不能访问`PTE_U=1`的地址）。
 
+## trap执行流程
+
+
+
+<img src="http://cdn.zhengyanchen.cn/img202209220921323.png" alt="截屏2022-09-22 09.21.37" style="zoom:30%;" />
+
 ## 
-
-
-
-
-
-
-
