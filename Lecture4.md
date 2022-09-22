@@ -43,4 +43,7 @@
 
 <img src="http://cdn.zhengyanchen.cn/img202209220921323.png" alt="截屏2022-09-22 09.21.37" style="zoom:30%;" />
 
-## 
+##  ecall指令之前的状态
+
+
+

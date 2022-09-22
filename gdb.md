@@ -1,5 +1,10 @@
 # GDB
 
+ 关于gdb的使用参考
+
+1. [gdb小技巧](https://wizardforcel.gitbooks.io/100-gdb-tips/content/break-on-address.html)
+2. [gdb手册](https://sourceware.org/gdb/onlinedocs/gdb/index.html#SEC_Contents)
+
 ## help
 
 如果不熟悉某个命令，运行`help<command>`获取帮助
@@ -50,7 +55,13 @@ x/2c %a1
 
 以字符形式查看`a1`寄存器指向的内存存储的两个字符
 
+## 设置断点
 
+* 在程序地址处设置断点
+
+  ```sh
+  (gdb) b *address
+  ```
 
 
 
