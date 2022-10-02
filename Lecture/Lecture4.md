@@ -131,7 +131,7 @@ riscv32-unknown-elf-gdb kernel/kernel
 
 进行调试。`si`进入，`pc`从一个很低的地址到了很高的地址，这实际进入了`trampoline page`。
 
-<img src="http://cdn.zhengyanchen.cn/img202209270901864.png" alt="截屏2022-09-27 09.01.22" style="zoom:50%;" />
+<img src="http://cdn.zhengyanchen.cn/img202209270901864.png" alt="截屏2022-09-27 09.01.22" style="zoom: 33%;" />
 
 此时`ecall`已经完成了这几件事
 
@@ -146,7 +146,10 @@ riscv32-unknown-elf-gdb kernel/kernel
 
 这都是硬件完成的，这似乎做的太少了，`ecall`并没有完成以下的操作：
 
-1. 没有更改`satp`,这意味着此时依然在使用用户页表，某种程度上，这也是为什么每一个用户页表都需要设置到`trampoline page`的映射却不设置`PTE_U`的原因。（验证一下，在`qemu`的控制台打印页表，和`ecall`之前完全一样）。		![截屏2022-09-27 09.33.37](http://cdn.zhengyanchen.cn/img202209270933602.png)
+1. 没有更改`satp`,这意味着此时依然在使用用户页表，某种程度上，这也是为什么每一个用户页表都需要设置到`trampoline page`的映射却不设置`PTE_U`的原因。（验证一下，在`qemu`的控制台打印页表，和`ecall`之前完全一样）。	
+
+   ​	<img src="http://cdn.zhengyanchen.cn/img202209270933602.png" alt="截屏2022-09-27 09.33.37" style="zoom:40%;" />
+
 2. 没有保存或者使用32个用户寄存器，尤其是没有改变`sp`寄存器，所以栈寄存器依然指向用户栈而非内核栈。
 
 以上`ecall`没做的都是软件需要完成的。在本节中，教授还讲解了`risc-v`为什么要这么设计而不去做这些软件的工作。
@@ -179,7 +182,7 @@ riscv32-unknown-elf-gdb kernel/kernel
 
    2. 那么`a0`是如果获得的？看`trap.c`里`usertrapret`函数，传入函数`fn`的第一个参数保存在`a0` 上。
 
-      ![截屏2022-09-27 11.33.40](http://cdn.zhengyanchen.cn/img202209271133341.png)
+      <img src="http://cdn.zhengyanchen.cn/img202209271133341.png" alt="截屏2022-09-27 11.33.40" style="zoom:40%;" />
 
       ==这里`fn`和强制转化为函数指针的用法将在后面的部分解释。==
 
@@ -241,20 +244,24 @@ riscv32-unknown-elf-gdb kernel/kernel
 
   3. ![截屏2022-09-27 14.55.42](http://cdn.zhengyanchen.cn/img202209271455464.png)
 
-     这一部分注释已经讲解得很清楚了，我们跳到`sfence.vma`,看看此时的栈指针和页表：
+     刚才我们把用户寄存器的内容一一存在`trapfrmae`上，现在从`trapframe`取一些值到寄存器上，更新栈指针，将cpuid放到`tp`寄存器上，将`usertrap`放到`t0`寄存器上，更新页表。
 
+     
+  
+     我们跳到`sfence.vma`,看看此时的栈指针和页表：
+  
      <img src="http://cdn.zhengyanchen.cn/img202209271459173.png" alt="截屏2022-09-27 14.59.46" style="zoom:50%;" />
-     
+  
      ![截屏2022-09-27 15.25.31](http://cdn.zhengyanchen.cn/img202209271525226.png)
-     
+  
      这就是完全不一样很长的页表。栈顶指针可以推断出是`sh`是第二个进程。
-     
+  
   3. 最后，将执行
   
      ```assembly
      jr t0
      ```
-     
+  
      `uservec`将跳入`usertrap`函数。
   
   * 可以看到`trampoline page`的神奇之处，这段代码在所有用户和内核的页表有完全一样的映射，所以切换页表时程序不会崩溃。而每个用户进程有它们独享的`trapframe`,虽然它们自己并不能访问。
@@ -263,7 +270,7 @@ riscv32-unknown-elf-gdb kernel/kernel
 
 ## usertrap
 
-[这里又有坑...需要重新编译工具链,怎么坑那么多，重新编译真的很费时间好吧。。。](https://stackoverflow.com/questions/67162162/the-gdb-in-my-machine-does-not-support-tui-display)
+[这里如果要使用`TUI`工具又有坑...需要重新编译工具链,怎么坑那么多，重新编译真的很费时间好吧。。。](https://stackoverflow.com/questions/67162162/the-gdb-in-my-machine-does-not-support-tui-display)
 
 现在跳进`usertrap`,下面来分步讲解这里的代码
 
@@ -277,11 +284,168 @@ riscv32-unknown-elf-gdb kernel/kernel
   struct proc *p = myproc();
   ```
 
-  确定用户空间运行的进程。之前我们已经多次调用了`myproc`函数，现在来看看它是如何工作的，
+  确定用户空间运行的进程。之前我们已经多次调用了`myproc`函数，现在来看看它是如何工作的
 
-* 
+  1. ```c
+     struct proc*
+     myproc(void) {
+       push_off();
+       struct cpu *c = mycpu();
+       struct proc *p = c->proc;
+       pop_off();
+       return p;
+     }
+     ```
+  
+     首先需要知道确认发生`trap`的cpu。
+  
+  2. ```c
+     int
+     cpuid()
+     {
+       int id = r_tp();
+       return id;
+     }
+     ```
+  
+     而确定cpu的方法正是从`tp`寄存器里取，在`uservec`做的一个工作正是把用户进程`trapframe`里的`kernel_hartid`放进`tp`寄存器。
 
-* 
+* ```c
+  p->trapframe->epc = r_sepc();
+  ```
 
-​	
+  在`trapframe`中保存用户程序的计数器。由于在内核中，可能会切换到另一个进程中，`sepc`寄存器就会被覆盖，将计数器保存在`trapframe`以后，当我们需要恢复该进程的时候，就可以取`trapframe`上的`epc`,再次提醒，==每个用户进程拥有它独享的`trapframe`==。
+
+* 在`scause`寄存器中，存放着进入`trap`的原因
+
+  *我想有一个问题需要注意，那就是像把trap的原因放入`scause`这些OS没有参与的工作基本都是硬件做的，之后不赘述*。
+
+  ```c
+    if(r_scause() == 8){
+  
+      if(p->killed)
+        exit(-1);
+      p->trapframe->epc += 4;
+      intr_on();
+  
+      syscall();
+    }
+  ```
+
+  1. 读取`scause`寄存器的值，确认是8-----即为系统调用之后进入；
+
+  2. 如果该进程被杀死了，那么退出；
+
+  3. 由于系统调用进入`trap`的指令是`ecall`,和后面要说的中断不同，不需要再执行一遍此指令，于是`epc` 加上4(`ecall`指令为4字节)，`trap`返回时直接执行下一个指令；
+
+  4. `trap`的硬件会把中断关闭，但系统调用又需要中断，所以这里显式打开。
+
+     然后进入`syscall`进行系统调用。
+
+* 我们略过系统调用的函数，直接来看看之后的操作
+
+  ```c
+  if(p->killed)
+      exit(-1);
+  usertrapret();
+  ```
+
+  确认用户进程没有被杀死，进入`usertrapret`函数。
+
+## usertrapret
+
+* ```c
+  intr_off();
+  ```
+
+  关中断，这是因为接下来一步里，将修改`stvec`寄存器的内容成用户空间发生`trap`跳入的代码，如果在内核发生中断，那么会发生错误
+
+* 修改`stvec`寄存器的内容成`uservec`
+
+* ```c
+  p->trapframe->kernel_satp = r_satp();         // kernel page table
+  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+  p->trapframe->kernel_trap = (uint64)usertrap;
+  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+  ```
+
+  和`uservec`的部分操作做镜像。
+
+  但我有点好奇，`trapframe`在`trap`中会被修改吗？如果没有，那么会需要做这些操作？
+
+  ==我的理解这是第一次从内核进入用户空间的时候做的操作，或者说这是`trapframe`初始化的一部分==
+
+* ```c
+    unsigned long x = r_sstatus();
+    x &= ~SSTATUS_SPP; // clear SPP to 0 for user mode
+    x |= SSTATUS_SPIE; // enable interrupts in user mode
+    w_sstatus(x);
+  ```
+
+  设置`sstatus`寄存器,`sret`指令将根据`sstatus`的标志位工作
+
+  1. 设置SSTATUS_SPP为0，则返回user mode
+  2. 设置SSTATUS_SPIE为1，则返回用户空间后，打开中断。
+
+* 生成SATP值
+
+* ```c
+  uint64 fn = TRAMPOLINE + (userret - trampoline);
+  ((void (*)(uint64,uint64))fn)(TRAPFRAME, satp);
+  ```
+
+  这部分是跳入`userret`的汇编中，由于编译的时候并不能确认`userret`的地址，所以需要通过计算得到。另外需要将该地址强制类型转化为函数指针后，传递两个参数进入函数。传递的参数`TRAPFRAME`保存在`a0`寄存器，`satp`保存在`a1`寄存器中。
+
+* **另外这里有一点需要注意，我们在内核C程序可以修改`sepc`这样的寄存器，却不能修改那32个用户寄存器，这一工作需要汇编语言来完成，因此usertrapret并不能恢复用户寄存器，这一工作将由trampoline完成**
+
+## userret
+
+回到`trampoline`的代码
+
+* ```assembly
+        # switch to the user page table.
+          csrw satp, a1
+          sfence.vma zero, zero
+  ```
+
+  `csrw a b`做的就是把b加载到a里而b不变
+
+  `csrw a b a`做的才是交换a,b的值
+
+  切换回用户页表
+
+* ```assembly
+         # put the saved user a0 in sscratch, so we
+          # can swap it with our a0 (TRAPFRAME) in the last step.
+          ld t0, 112(a0)
+          csrw sscratch, t0
+  
+  ```
+
+  将p->trapframe->a0加载`sscratch`， ）`to`寄存器只是一个无情的中间寄存器（为什么这样子）
+
+* 和`uservec`做镜像操作，恢复用户寄存器
+
+* ```assembly
+  	# restore user a0, and save TRAPFRAME in sscratch
+          csrrw a0, sscratch, a0
+          
+          # return to user mode and user pc.
+          # usertrapret() set up sstatus and sepc.
+          sret
+  ```
+
+  交换`a0`和`sscratch`,`sscratch`又保存`trapframd`地址，`a0`保存系统调用返回值。
+
+  `sret` 做这样几件事
+
+  1. 切换成user mode
+  2. `sepc`寄存器内容拷贝到`pc`中
+  3. 打开中断
+
+* 跳到下一个指令，一切回到最初的模样
+
+<img src="http://cdn.zhengyanchen.cn/img202210021250462.png" alt="截屏2022-10-02 12.50.03" style="zoom:53%;" />
+
+
 
