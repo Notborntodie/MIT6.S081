@@ -230,7 +230,7 @@ riscv32-unknown-elf-gdb kernel/kernel
 
 2. <img src="http://cdn.zhengyanchen.cn/img202209271047447.png" alt="截屏2022-09-27 10.47.27" style="zoom:50%;" />
 
-   之前可以看到跳入内核后的第二个命令，这里做的是将`sd`寄存器的内容加载到内存中`a0`+40的位置,此后做的指令基本相似，就是把31个其他的用户寄存器依`trapframe`的结果保存。
+   之前可以看到跳入内核后的第二个命令，这里做的是将`ra`寄存器的内容加载到内存中`a0`+40的位置,此后做的指令基本相似，就是把31个其他的用户寄存器依`trapframe`的结果保存。
 
 <img src="http://cdn.zhengyanchen.cn/img202209271056754.png" alt="截屏2022-09-27 10.56.51" style="zoom:50%;" />
 
@@ -419,7 +419,7 @@ riscv32-unknown-elf-gdb kernel/kernel
           # can swap it with our a0 (TRAPFRAME) in the last step.
           ld t0, 112(a0)
           csrw sscratch, t0
-  
+    
   ```
 
   将p->trapframe->a0加载`sscratch`， ）`to`寄存器只是一个无情的中间寄存器（为什么这样子）
