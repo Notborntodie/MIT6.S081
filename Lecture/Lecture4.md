@@ -419,7 +419,7 @@ riscv32-unknown-elf-gdb kernel/kernel
           # can swap it with our a0 (TRAPFRAME) in the last step.
           ld t0, 112(a0)
           csrw sscratch, t0
-    
+        
   ```
 
   将p->trapframe->a0加载`sscratch`， ）`to`寄存器只是一个无情的中间寄存器（为什么这样子）
@@ -441,8 +441,7 @@ riscv32-unknown-elf-gdb kernel/kernel
 
   1. 切换成user mode
   2. `sepc`寄存器内容拷贝到`pc`中
-  3. 打开中断
-
+  
 * 跳到下一个指令，一切回到最初的模样
 
 <img src="http://cdn.zhengyanchen.cn/img202210021250462.png" alt="截屏2022-10-02 12.50.03" style="zoom:53%;" />
