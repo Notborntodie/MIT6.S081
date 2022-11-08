@@ -117,7 +117,7 @@ sys_sbrk(void)
 现在Xv6的`trap`也需要修改了，它需要添加page fault handler做以下这几件事：
 
 ```mermaid
-graph LR
+graph TD;
 A[allocate a page]-->B[zero the page]-->c[map the page and modify pte]-->D[restart the instruction]
 ```
 
