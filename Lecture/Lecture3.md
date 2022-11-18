@@ -1,6 +1,6 @@
 # page table
 
-这一lecture的主题将会是页表（page table）,它实现了从虚拟地址到物理地址的映射。
+这一Lecture的主题将会是页表（page table）,它实现了从虚拟地址到物理地址的映射。
 
 ```mermaid
 graph LR
@@ -12,7 +12,7 @@ VM--page table-->PM
 2.  然后将描述实现虚拟内存的`RISC-V`硬件。
 3. 最后将查看Xv6的虚拟内存代码，了解内核地址空间和用户地址空间的结构。
 
-
+   
 
 ## Address space
 
@@ -37,7 +37,7 @@ cpu--VA-->mmu--PA-->mem
 
 ### 页表2
 
-mmu一旦打开，对于CPU来说，执行指令中的地址都是虚拟地址。mmu中需要一个table完成虚拟地址到物理地址的映射，这就是page table。通常来说，page table储存在内存中。在CPU中有一个叫做SATP的寄存器，它保存 page table的地址，这样，mmu就可以根据这个地址去内存中寻找table。（现在的讨论中MMU似乎并不会保存page table,只是去内存中找page table,而事实上mmu内部会有page table的缓存，就是TLB快表，之后讨论。）
+mmu一旦打开，对于CPU来说，执行指令中的地址都是虚拟地址。mmu中需要一个table完成虚拟地址到物理地址的映射，这就是page table。通常来说，page table储存在内存中。在CPU中有一个叫做`SATP`的寄存器，它保存 page table的地址，这样，mmu就可以根据这个地址去内存中寻找table。（现在的讨论中MMU似乎并不会保存page table,只是去内存中找page table,而事实上mmu内部会有page table的缓存，就是TLB快表，之后讨论。）
 
 值得注意的是，进程切换的时候SATP的寄存器会被内核（也只能被内核修改，执行在kernel mode中）修改，这一点我觉得很好地帮我们理解进程切换的含义，内核毫无疑问也保存了所有进程的page table在内存中的物理地址（准确来说，保留了一级页表的物理地址i）。
 

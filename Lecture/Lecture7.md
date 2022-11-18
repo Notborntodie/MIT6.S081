@@ -475,13 +475,30 @@ while(__sync_lock_test_and_set(&lk->locked, 1) != 0)
 
 ### __sync_lock_release必要性
 
-
+并不能使用`store`直接给`lk->locked`赋值0，这是因为`store`并不是一个原子指令 。
 
 ### 关中断
 
+```c
+void
+acquire(struct spinlock *lk)
+{
+  push_off(); // disable interrupts to avoid deadlock.
+  if(holding(lk))
+```
 
+在`acquire`的开始就需要关中断，这和保障`critical section`操作的原子性也有关系 。
 
+以`uartputs`和`uartintr`为例，在`uartput`的l开头会获取
 
+```c
+void
+uartputc(int c)
+{
+  acquire(&uart_tx_lock);
+```
+
+UART传输完会产生中断，进入`uartintr`函数,也会`acquire(&uart_tx_lock)`。假如`uartputs`还没释放锁，却因为中断进入`uartintr`。这时候就会发生deadlock。
 
 ### 实现critical section
 
