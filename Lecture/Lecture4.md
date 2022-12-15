@@ -1,5 +1,7 @@
 # Isolation & system call entry/exit
 
+[TOC]
+
 ## trap机制
 
 用户程序和内核的切换被称为`trap`,主要发生在三种情况下：

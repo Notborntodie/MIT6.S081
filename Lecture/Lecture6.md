@@ -1,5 +1,7 @@
 # Interrupts
 
+[TOC]
+
 OS对于中断(interrupts)和系统调用的处理有很多相似之处，当硬件触发中断的之后，OS会做以下的工作:
 
 ```mermaid

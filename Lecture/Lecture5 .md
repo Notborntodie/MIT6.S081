@@ -1,5 +1,7 @@
 # Page Faults
 
+[TOC]
+
 fault听上去不是一个好词，然而page fault却是一个很精巧的机制。本讲将讲述基于它实现的几个功能：
 
 * **lazy allocation**
